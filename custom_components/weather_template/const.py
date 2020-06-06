@@ -1,0 +1,15 @@
+"""Constants used by weather template."""
+
+CONF_WEATHER = "weather"
+
+CONF_TEMPERATURE_TEMPLATE = "temperature_template"
+CONF_TEMPERATURE_UNIT_TEMPLATE = "temperature_unit_template"
+CONF_PRESSURE_TEMPLATE = "pressure_template"
+CONF_HUMIDITY_TEMPLATE = "humidity_template"
+CONF_WIND_TEMPLATE = "wind_template"
+CONF_WIND_DIR_TEMPLATE = "wind_direction_template"
+CONF_OZONE_TEMPLATE = "ozone_template"
+CONF_ATTRIBUTION_TEMPLATE = "attribution_template"
+CONF_VISIBILITY_TEMPLATE = "visibility_template"
+CONF_FORECAST_TEMPLATE = "forecast_template"
+CONF_CONDITION_TEMPLATE = "condition_template"
