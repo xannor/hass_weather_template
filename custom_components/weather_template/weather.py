@@ -1,6 +1,7 @@
 """ Template Weather Component """
 
 import logging
+import json
 
 import voluptuous as vol
 
@@ -42,6 +43,7 @@ from homeassistant.components.template import extract_entities, initialise_templ
 from homeassistant.components.template.const import CONF_AVAILABILITY_TEMPLATE
 
 _LOGGER = logging.getLogger(__name__)
+_LOGGER.debug("Loading...")
 
 WEATHER_SCHEMA = vol.Schema(
     {
@@ -69,6 +71,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the template weather."""
+
+    _LOGGER.debug("Setting up platform")
+
     weather = []
 
     for device, device_config in config[CONF_WEATHER].items():
@@ -81,7 +86,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         temperature_template = device_config.get(CONF_TEMPERATURE_TEMPLATE)
         temperature_unit_template = device_config.get(CONF_TEMPERATURE_UNIT_TEMPLATE)
         visibility_template = device_config.get(CONF_VISIBILITY_TEMPLATE)
-        wind_direction_template = device_config.get(CONF_WIND_DIR_TEMPLATE)
+        wind_bearing_template = device_config.get(CONF_WIND_DIR_TEMPLATE)
         wind_template = device_config.get(CONF_WIND_TEMPLATE)
         friendly_name = device_config.get(ATTR_FRIENDLY_NAME, device)
         friendly_name_template = device_config.get(CONF_FRIENDLY_NAME_TEMPLATE)
@@ -98,7 +103,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             CONF_TEMPERATURE_TEMPLATE: temperature_template,
             CONF_TEMPERATURE_UNIT_TEMPLATE: temperature_unit_template,
             CONF_VISIBILITY_TEMPLATE: visibility_template,
-            CONF_WIND_DIR_TEMPLATE: wind_direction_template,
+            CONF_WIND_DIR_TEMPLATE: wind_bearing_template,
             CONF_WIND_TEMPLATE: wind_template,
         }
 
@@ -110,6 +115,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             templates
         )
 
+        _LOGGER.debug("Creating entity %s...", friendly_name)
         weather.append(
             WeatherTemplate(
                 hass,
@@ -122,7 +128,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 pressure_template,
                 humidity_template,
                 wind_template,
-                wind_direction_template,
+                wind_bearing_template,
                 ozone_template,
                 attribution_template,
                 visibility_template,
@@ -133,8 +139,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         )
 
     async_add_entities(weather)
-
-    return True
+    _LOGGER.debug("Done.")
 
 class WeatherTemplate(WeatherEntity):
     """Representation of a Weather Template"""
@@ -151,7 +156,7 @@ class WeatherTemplate(WeatherEntity):
         pressure_template,
         humidity_template,
         wind_template,
-        wind_direction_template,
+        wind_bearing_template,
         ozone_template,
         attribution_template,
         visibility_template,
@@ -170,19 +175,19 @@ class WeatherTemplate(WeatherEntity):
         self._condition_template = condition_template
         self._condition = None
         self._availability_template = availability_template
-        self._available = True
+        self._available = False
         self._temperature = None
         self._temperature_template = temperature_template
         self._temperature_units = None
         self._temperature_unit_template = temperature_unit_template
-        self._presure = None
+        self._pressure = None
         self._pressure_template = pressure_template
         self._humidity = None
         self._humidity_template = humidity_template
         self._wind = None
         self._wind_template = wind_template
-        self._wind_direction = None
-        self._wind_direction_template = wind_direction_template
+        self._wind_bearing = None
+        self._wind_bearing_template = wind_bearing_template
         self._ozone = None
         self._ozone_template = ozone_template
         self._attribution = None
@@ -192,22 +197,27 @@ class WeatherTemplate(WeatherEntity):
         self._forecast = None
         self._forecast_template = forecast_template
         self._entities = entity_ids
+        _LOGGER.debug("Created entity %s: %s", self.entity_id, friendly_name)
 
-    async def async_add_to_hass(self):
+    async def async_added_to_hass(self):
         """Register callbacks."""
+        _LOGGER.debug("Registering: %s...", self.entity_id)
 
         @callback
-        def template_sensor_state_listener(entity, old_state, new_state):
+        def template_state_listener(entity, old_state, new_state):
             """Handle device state changes."""
+            _LOGGER.debug("Got template state change from %s: %s...", entity, self._name)
             self.async_schedule_update_ha_state(True)
 
         @callback
         def template_weather_startup(event):
             """Update template on startup."""
+            _LOGGER.debug("Starting up: %s...", self._name)
+
             if self._entities != MATCH_ALL:
                 # Track state change only for valid templates
                 async_track_state_change(
-                    self.hass, self._entities, template_sensor_state_listener
+                    self.hass, self._entities, template_state_listener
                 )
 
             self.async_schedule_update_ha_state(True)
@@ -259,7 +269,7 @@ class WeatherTemplate(WeatherEntity):
     @property
     def wind_bearing(self):
         """Return the wind bearing."""
-        return self._wind_direction
+        return self._wind_bearing
 
     @property
     def ozone(self):
@@ -288,11 +298,12 @@ class WeatherTemplate(WeatherEntity):
 
     async def async_update(self):
         """Update the state from the template."""
+        _LOGGER.debug("Updating: %s...", self._name)
 
         try:
             self._condition = self._condition_template.async_render()
-            self._temperature = self._temperature_template.async_render()
-            self._temperature_units = self._temperature_units.async_render()
+            self._temperature = float(self._temperature_template.async_render())
+            self._temperature_units = self._temperature_unit_template.async_render()
             self._available = True
         except TemplateError as ex:
             self._available = False
@@ -309,27 +320,26 @@ class WeatherTemplate(WeatherEntity):
                 self._temperature_units = None
                 _LOGGER.error("Could not render template %s: %s", self._name, ex)            
             
-        templates = {
-            "_name": self._friendly_name_template,
-            "_available": self._availability_template,            
-            "_attribution": self._attribution_template,
-            "_forecast": self._forecast_template,
-            "_humidty": self._humidity_template,
-            "_ozone": self._ozone_template,
-            "_pressure": self._pressure_template,
-            "_visibility": self._visibility_template,
-            "_wind_direction" : self._wind_direction_template,
-            "_wind": self._wind_template,
-        }
-
-        for property_name, template in templates.items():
+        for property_name, template, formatter in (
+            ("_name", self._friendly_name_template, None),
+            ("_available", self._availability_template, lambda v: v.lower() == "true"),
+            ("_attribution", self._attribution_template, None),
+            ("_forecast", self._forecast_template, lambda v: json.loads(v) ),
+            ("_humidity", self._humidity_template, lambda v: float(v)),
+            ("_ozone", self._ozone_template, lambda v: float(v)),
+            ("_pressure", self._pressure_template, lambda v: float(v)),
+            ("_visibility", self._visibility_template, lambda v: float(v)),
+            ("_wind_bearing", self._wind_bearing_template, lambda v: float(v)),
+            ("_wind", self._wind_template, lambda v: float(v)),
+        ):
             if template is None:
                 continue
 
             try:
                 value = template.async_render()
-                if property_name == "_available":
-                    value = value.lower() == "true"
+                if(formatter is not None):
+                    value = formatter(value)
+                
                 setattr(self, property_name, value)
             except TemplateError as ex:
                 friendly_property_name = property_name[1:].replace("_", " ")
@@ -353,3 +363,5 @@ class WeatherTemplate(WeatherEntity):
                         self._name,
                         ex,
                     )
+        _LOGGER.debug("Updated: %s...", self._name)
+        

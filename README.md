@@ -35,6 +35,6 @@ weather:
       ozone_template: "{{ state_attr('weather.dark_sky', 'ozone') }}"
       attribution_template: "{{ state_attr('weather.dark_sky', 'attribution') }} and {{ state_attr('sensor.temperature', 'brand') }}"
       visibility_template: "{{ state_attr('weather.dark_sky', 'visibility') }}"
-      forecast_template: "{{ state_attr('weather.dark_sky', 'forecast') }}"
+      forecast_template: "{{ state_attr('weather.dark_sky', 'forecast') | to_json }}"
 
 ```
