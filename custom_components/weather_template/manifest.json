@@ -2,6 +2,7 @@
     "domain": "weather_template",
     "name": "Weather Template",
     "documentation": "https://github.com/xannor/weather_template",
+    "issue_tracker": "https://github.com/xannor/weather_template/issues",
     "dependencies": [],
     "codeowners": ["@xannor"],
     "requirements": []
