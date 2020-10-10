@@ -42,10 +42,9 @@ weather:
      <dd><i>(string)(Optional)</i><br/>The name to use on the front end.</dd>
     </dl>
     <dl>
-     <dt>entity_id</dt>
-     <dd><i>(string|list)(Optional)</i><br/>
-      A list of entity IDs so the station only reacts to state changes of these entities. 
-      This can be used if the automatic analysis fails to find all relevant entities.
+     <dt>unique_id</dt>
+     <dd><i>(string)(Optional)</i><br/>
+      An ID that uniquely identifies this fan. Set this to an unique value to allow customization trough the UI.
      </dd>
     </dl>
     <dl>
