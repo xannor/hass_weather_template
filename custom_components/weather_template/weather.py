@@ -220,14 +220,18 @@ class WeatherTemplate(TemplateEntity, WeatherEntity):
         return _updater
 
     def _update_forecast(self, forecast):
-        try:
-            forecast_json = json.loads(forecast)
-        except ValueError:
-            _LOGGER.error(
-                "Could not parse forecast from template response: %s", forecast
-            )
-            self._forecast = None
-            return
+        if type(forecast) == str:
+            try:
+                forecast_json = json.loads(forecast)
+            except ValueError:
+                _LOGGER.error(
+                    "Could not parse forecast from template response: %s", forecast
+                )
+                self._forecast = None
+                return
+        else:
+            forecast_json = forecast
+         
         self._forecast = forecast_json
 
     def _add_float_template_attribute(
