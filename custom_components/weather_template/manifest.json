@@ -3,7 +3,7 @@
     "name": "Weather Template",
     "documentation": "https://github.com/xannor/weather_template",
     "issue_tracker": "https://github.com/xannor/weather_template/issues",
-    "version": "0.1.2",
+    "version": "1.1.1",
     "dependencies": [],
     "codeowners": ["@xannor"],
     "requirements": []
