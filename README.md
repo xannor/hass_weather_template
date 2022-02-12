@@ -1,3 +1,5 @@
+This project is no longer supported, I suggest using the built in weather template as this was only a stop-gap for deficient prior versions.
+
 # Weather Template
 Weather Template for Home Assisstant
 
